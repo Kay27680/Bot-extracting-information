@@ -1,0 +1,71 @@
+import pytesseract
+import cv2
+import spacy
+import pandas as pd
+from spacy import displacy
+
+# Initialize the spaCy NLP model
+nlp = spacy.load("en_core_web_sm")
+
+# Path to Tesseract executable (change if necessary)
+pytesseract.pytesseract.tesseract_cmd = r"C:\Program Files\Tesseract-OCR\tesseract.exe"  # Update based on your installation
+
+# Function to read and extract text from an image (using OCR)
+def extract_text_from_image(image_path):
+    # Read the image using OpenCV
+    img = cv2.imread(image_path)
+    # Convert image to grayscale for better OCR performance
+    gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
+    # Use pytesseract to extract text
+    extracted_text = pytesseract.image_to_string(gray)
+    return extracted_text
+
+# Function to process and extract entities (like names, dates, amounts) using spaCy
+def extract_entities_from_text(text):
+    # Process the text using spaCy NLP model
+    doc = nlp(text)
+    entities = []
+    for ent in doc.ents:
+        entities.append((ent.text, ent.label_))  # Store extracted text and entity label
+    return entities
+
+# Function to analyze and display key information
+def analyze_extracted_data(entities):
+    # Convert extracted entities into a DataFrame for easy analysis
+    df = pd.DataFrame(entities, columns=['Entity', 'Label'])
+    
+    # Show summary of extracted entities
+    print("\n--- Extracted Entities ---")
+    print(df)
+    
+    # Basic analysis: Count of different entity types (e.g., dates, amounts)
+    entity_counts = df['Label'].value_counts()
+    print("\n--- Entity Type Counts ---")
+    print(entity_counts)
+
+# Main function to run the bot
+def main(image_path):
+    # Step 1: Extract text from the document image
+    print("Extracting text from image...")
+    extracted_text = extract_text_from_image(image_path)
+    
+    if not extracted_text.strip():
+        print("No text detected in the document.")
+        return
+    
+    # Step 2: Extract entities using spaCy
+    print("Extracting entities from text...")
+    entities = extract_entities_from_text(extracted_text)
+    
+    if not entities:
+        print("No entities detected in the text.")
+        return
+    
+    # Step 3: Analyze and display the extracted data
+    analyze_extracted_data(entities)
+
+# Example usage
+if __name__ == "__main__":
+    # Path to the financial document image (could be a scan of an invoice or contract)
+    document_image_path = "path_to_your_financial_document.jpg"  # Update with your document's path
+    main(document_image_path)
